@@ -43,6 +43,32 @@ conda activate pypsa-gb
 Add `conda activate pypsa-gb` to your shell profile to automatically activate it in new terminals.
 ```
 
+### Alternative: Install with uv (no conda)
+
+If you prefer [uv](https://docs.astral.sh/uv/) (or pip) over conda, the repository ships a
+`pyproject.toml` and a pinned `uv.lock`. The geospatial dependencies install from binary wheels,
+so no conda or system GDAL/PROJ is required.
+
+```bash
+uv venv                # create .venv (Python >= 3.11)
+uv sync                # install the locked runtime environment (HiGHS solver included)
+uv run snakemake -n -p # run any workflow command via the env
+```
+
+Optional extras are available for other solvers and tooling:
+
+```bash
+uv sync --extra gurobi   # commercial Gurobi solver
+uv sync --extra scip     # SCIP solver
+uv sync --extra viz      # seaborn / plotly / pydeck analysis plots
+uv sync --extra hpc      # SLURM / cluster Snakemake executors
+uv sync --extra docs     # Sphinx documentation toolchain
+uv sync --extra dev      # Jupyter, ruff, pre-commit, pylint
+```
+
+The committed `uv.lock` makes the environment fully reproducible. Prefix workflow commands with
+`uv run` (e.g. `uv run snakemake ...`), or activate the venv with `source .venv/bin/activate`.
+
 ## Step 4: Install a Solver
 
 PyPSA-GB requires an optimization solver. You have two options:
