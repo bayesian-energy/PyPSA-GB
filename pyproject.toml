@@ -1,0 +1,114 @@
+# PyPSA-GB can be installed either with conda (envs/pypsa-gb.yaml) or with pip/uv via this file.
+# The default dependency set is everything needed to run the Snakemake workflow end-to-end with
+# the open HiGHS solver. Heavier or optional pieces (other solvers, plotting, HPC executors, docs,
+# dev tooling) are extras so a minimal run stays light. A committed uv.lock pins the full tree.
+#
+#   uv venv && uv sync            # minimal runtime (HiGHS)
+#   uv sync --extra viz --extra dev
+#   uv run snakemake -n           # dry-run the workflow
+#
+# Geospatial deps (geopandas/shapely/pyproj/fiona/rasterio/rioxarray/cartopy) ship binary wheels
+# that bundle GDAL/PROJ/GEOS, so no conda/system libraries are required. conda-only system packages
+# (libgdal-netcdf, proj, glpk, pandoc, graphviz binaries) are intentionally omitted from the pip set.
+[project]
+name = "pypsa-gb"
+version = "0.1.0"
+description = "A power system model of Great Britain built on PyPSA"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    # Core PyPSA ecosystem
+    "pypsa>=1.0.7",
+    "atlite>=0.3",
+    "linopy>=0.5.5",
+    "powerplantmatching>=0.5.15",
+    # Data processing & analysis
+    "numpy<2.5",
+    # pandas 3.0 defaults to arrow-backed strings (ArrowStringArray), which PyPSA's
+    # solve_network / xarray indexing cannot handle. Pin <3 until that is resolved upstream.
+    "pandas>=2.1,<3",
+    "scipy",
+    "xarray>=2024.03.0,<=2025.09.0",
+    "networkx",
+    "dask",
+    # Geospatial & coordinate systems (used extensively; binary wheels bundle GDAL/PROJ/GEOS)
+    "geopandas>=1",
+    "pyproj>=3.0",
+    "shapely>=2.0,<2.1",
+    "fiona",
+    "rasterio",
+    "rioxarray",
+    "cartopy",
+    # Machine learning & clustering
+    "scikit-learn",
+    # Snakemake workflow (PyPI 'snakemake' == conda 'snakemake-minimal')
+    "snakemake>=9",
+    "snakemake-storage-plugin-http>=0.3",
+    # Data I/O
+    "xlrd",
+    "openpyxl",
+    "pyxlsb",
+    "tables",          # conda 'pytables'
+    "lxml",
+    "pyyaml",          # conda 'yaml'
+    "netcdf4",
+    "geojson",
+    "pyarrow",
+    # String / fuzzy matching
+    "python-Levenshtein>=0.27.1",
+    "fuzzywuzzy",
+    # Web & API
+    "requests",
+    "country_converter",
+    "geopy",
+    "entsoe-py",
+    # Visualization (core; matplotlib is imported across the workflow)
+    "matplotlib",
+    "folium",
+    # Utilities
+    "tqdm",
+    "pytz",
+    "tsam>=2.3.1",
+    # Default solver (open source)
+    "highspy",
+]
+
+[project.optional-dependencies]
+# Commercial / additional solvers
+gurobi = ["gurobipy==12.0.3"]
+scip = ["pyscipopt"]
+# Extended analysis / plotting
+viz = ["seaborn", "plotly", "pydeck"]
+# HPC executors + profiling
+hpc = [
+    "snakemake-executor-plugin-slurm==1.8.0",
+    "snakemake-executor-plugin-cluster-generic",
+    "memory_profiler",
+]
+# Documentation (Sphinx)
+docs = [
+    "sphinx>=7.0",
+    "sphinx_rtd_theme>=2.0",
+    "myst-parser>=2.0",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "sphinxcontrib-mermaid",
+    "nbsphinx",
+    "nbsphinx-link",
+    "docutils",
+]
+# Development & Jupyter
+dev = [
+    "jupyter",
+    "ipython",
+    "ipykernel",
+    "pre-commit",
+    "ruff",
+    "pylint",
+]
+
+[tool.uv]
+# PyPSA-GB is a Snakemake workflow, not an installable package — manage the env, don't build it.
+package = false

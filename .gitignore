@@ -26,3 +26,6 @@ temp_*
 
 # secrets / API tokens
 .env
+
+# uv / pip virtualenv
+.venv/
