@@ -439,7 +439,9 @@ def apply_line_rating_overrides(network, scenario_config, logger):
 
     # ── 1. Voltage floor ─────────────────────────────────────────────────────
     min_v = float(transmission.get('min_bm_constraint_voltage_kv', 0))
-    if min_v > 0:
+    # Skip when the network has no lines (e.g. the Zonal network models inter-zone
+    # links and carries no lines / no 'v_nom' column) — indexing it would KeyError.
+    if min_v > 0 and not network.lines.empty and 'v_nom' in network.lines.columns:
         # Only applies to lines — transformers span two voltage levels so v_nom
         # is ambiguous, and transformer constraints are not the source of loop-flow
         # artefacts in the Highland 132 kV network.
