@@ -320,10 +320,19 @@ def enrich_interconnector_locations(input_file: str, neso_register_file: str, ou
         'international_latitude', 'international_longitude', 'international_location',
         'location_source', 'coordinate_quality', 'location_notes'
     ]
-    
+    numeric_columns = {
+        'gb_latitude', 'gb_longitude', 'international_latitude', 'international_longitude'
+    }
+
     for col in new_columns:
         if col not in interconnectors.columns:
-            interconnectors[col] = np.nan
+            # String columns must be object dtype: a float64 NaN column raises
+            # "TypeError: Invalid value for dtype 'float64'" when a string is later
+            # assigned under strict pandas (>=2.x).
+            if col in numeric_columns:
+                interconnectors[col] = np.nan
+            else:
+                interconnectors[col] = pd.Series(np.nan, index=interconnectors.index, dtype=object)
     
     # Create NESO lookup by name (handle variations)
     neso_lookup = {}
