@@ -40,7 +40,8 @@ from scripts.utilities.download_cutouts import (
 DATA_DIR = "data/atlite/cutouts"
 
 
-def prepare_cutouts(years, outputs, enable_zenodo=True, verify_checksum=True):
+def prepare_cutouts(years, outputs, enable_zenodo=True, verify_checksum=True,
+                    enable_earthmover=False, earthmover_bounds=None):
     """
     Prepare cutouts for the given years using the tiered strategy.
 
@@ -83,6 +84,8 @@ def prepare_cutouts(years, outputs, enable_zenodo=True, verify_checksum=True):
             enable_zenodo=enable_zenodo,
             verify_checksum=verify_checksum,
             zenodo_files=zenodo_files,
+            enable_earthmover=enable_earthmover,
+            earthmover_bounds=earthmover_bounds,
         )
         sources[year] = source
         logger.info(f"  Source: {source}")
@@ -93,10 +96,11 @@ def prepare_cutouts(years, outputs, enable_zenodo=True, verify_checksum=True):
     logger.info(f"{'='*60}")
     for year, source in sources.items():
         icon = {
-            "data_dir": "[CACHED] ",
-            "zenodo": "[ZENODO] ",
-            "atlite": "[ERA5]   ",
-        }.get(source, "[?]      ")
+            "data_dir": "[CACHED]   ",
+            "earthmover": "[EARTHMVR] ",
+            "zenodo": "[ZENODO]   ",
+            "atlite": "[ERA5]     ",
+        }.get(source, "[?]        ")
         logger.info(f"  {icon} uk-{year}.nc")
     logger.info(f"{'='*60}\n")
 
@@ -112,10 +116,17 @@ if __name__ == "__main__":
     enable_zenodo = zenodo_config.get("enabled", True)
     verify_checksum = zenodo_config.get("verify_checksum", True)
 
+    # Earthmover tier (opt-in; needs the optional arraylake deps + a free Arraylake account)
+    earthmover_config = snakemake_config.get("earthmover", {})
+    enable_earthmover = earthmover_config.get("enabled", False)
+    earthmover_bounds = snakemake_config.get("era5", {}).get("bounds")
+
     prepare_cutouts(
         years=years,
         outputs=outputs,
         enable_zenodo=enable_zenodo,
         verify_checksum=verify_checksum,
+        enable_earthmover=enable_earthmover,
+        earthmover_bounds=earthmover_bounds,
     )
 

@@ -113,8 +113,9 @@ snakemake -n -p
 For renewable generation profiles, you need ERA5 weather data "cutouts". PyPSA-GB uses a **tiered acquisition strategy** to minimize download times:
 
 1. **Data directory** - Check `data/atlite/cutouts/` for cached copy (instant)
-2. **Zenodo** - Download pre-built cutouts from [Zenodo repository](https://zenodo.org/records/18325225) (~5-10 minutes per year, years 2010-2024)
-3. **ERA5 API** - Full download via atlite as fallback (~2-4 hours per year)
+2. **Earthmover** - Build from the public Arraylake ERA5 dataset, opt-in (~minutes, no full-file download, any year 1940-present)
+3. **Zenodo** - Download pre-built cutouts from [Zenodo repository](https://zenodo.org/records/18325225) (~5-10 minutes per year, years 2010-2024)
+4. **ERA5 API** - Full download via atlite as fallback (~2-4 hours per year)
 
 ### Quick Start (Recommended)
 
@@ -134,6 +135,30 @@ snakemake -s Snakefile_cutouts --cores 1
 ```
 
 **No CDS API credentials required** for years 2010-2024 when using Zenodo!
+
+### Earthmover ERA5 (fastest, opt-in)
+
+The Earthmover tier builds cutouts directly from the public Arraylake ERA5 dataset
+([`earthmover-public/era5`](https://docs.earthmover.io/)). It reads only the GB box for the
+requested year, so there is **no ~700 MB per-year download** and **any year 1940-present** is
+available (not just 2010-2024). It is tried before Zenodo when enabled.
+
+It needs a few optional packages and a free Arraylake account:
+
+```bash
+pip install arraylake "zarr>=3" icechunk pcodec numcodecs
+arraylake auth login          # one-time; or set ARRAYLAKE_TOKEN
+
+# enable the tier
+#   config/cutouts_config.yaml:
+#   earthmover:
+#     enabled: true
+
+snakemake -s Snakefile_cutouts --cores 1
+```
+
+If the optional packages or credentials are missing, the tier is skipped automatically and
+acquisition falls through to Zenodo, then the CDS API — so it is safe to leave enabled.
 
 ### Manual ERA5 Download (Advanced)
 
