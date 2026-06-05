@@ -6,8 +6,10 @@ PyPSA-GB: Cutout Generation Workflow
 ║                                                                            ║
 ║ This workflow acquires weather cutouts using a tiered strategy:            ║
 ║   1. Data dir: check for cached copy in data/atlite/cutouts/ (instant)    ║
-║   2. Zenodo: download pre-built cutouts (~minutes per file)                ║
-║   3. Atlite/ERA5: full download from CDS API (~2-4 hours per file)        ║
+║   2. Earthmover: build from public Arraylake ERA5 (opt-in, ~minutes,      ║
+║      no full-file download, any year 1940-present; needs a free token)    ║
+║   3. Zenodo: download pre-built cutouts (~minutes per file)                ║
+║   4. Atlite/ERA5: full download from CDS API (~2-4 hours per file)        ║
 ║                                                                            ║
 ║ Snakemake skips re-downloading if output file already exists.              ║
 ║ Zenodo repository: https://zenodo.org/records/18325225                     ║
