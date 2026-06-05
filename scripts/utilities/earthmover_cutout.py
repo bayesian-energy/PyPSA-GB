@@ -106,8 +106,12 @@ def _retrieve_data_earthmover(product=None, chunks=None, tmpdir=None, lock=None,
 
     for s in short:
         out[s].attrs.setdefault("units", _DEFAULT_UNITS.get(s, ""))
-    # Uniform spatial chunks so atlite's concat/write doesn't hit "inconsistent chunks along y".
-    return out.chunk({"latitude": -1, "longitude": -1})
+    # Eagerly load each (month, box) slice in the main thread: the store's year-long time chunks
+    # mean any read transiently decompresses full-year tiles, so loading per monthly request keeps
+    # memory bounded (one buffer at a time) instead of all reads coexisting under the synchronous
+    # scheduler. Also keeps arraylake reads off dask workers and yields uniform (single) chunks so
+    # atlite's write avoids "inconsistent chunks along y".
+    return out.load()
 
 
 def _patch_atlite() -> None:
