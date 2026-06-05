@@ -220,14 +220,43 @@ def download_with_atlite(year, output_path):
     logger.info(f"  atlite download complete for {year}")
 
 
+def is_earthmover_available():
+    """True if the Earthmover tier can be used (arraylake importable + credentials present)."""
+    try:
+        import arraylake  # noqa: F401
+    except ImportError:
+        return False
+    # Either ARRAYLAKE_TOKEN, or a cached `arraylake auth login` session.
+    if os.environ.get("ARRAYLAKE_TOKEN"):
+        return True
+    try:
+        from arraylake import Client
+
+        Client()  # raises if not logged in
+        return True
+    except Exception:
+        return False
+
+
+def download_with_earthmover(year, output_path, bounds=None):
+    """Build the cutout from the public Earthmover ERA5 store (fast, no 700 MB download)."""
+    from scripts.utilities.earthmover_cutout import build_earthmover_cutout
+
+    logger.info(f"[EARTHMOVER] Building cutout for {year} from earthmover-public/era5...")
+    build_earthmover_cutout(year, output_path, bounds=bounds)
+    logger.info(f"  Earthmover build complete for {year}")
+
+
 def acquire_cutout(year, output_path, data_dir=None, enable_zenodo=True,
-                   verify_checksum=True, zenodo_files=None):
+                   verify_checksum=True, zenodo_files=None,
+                   enable_earthmover=False, earthmover_bounds=None):
     """
     Acquire a cutout file using a tiered strategy:
 
     1. Check if it exists in data_dir (copy)
-    2. Try downloading from Zenodo (fast)
-    3. Fall back to atlite ERA5 download (slow)
+    2. Build from Earthmover ERA5 if enabled (fast; reads only the GB box)
+    3. Try downloading from Zenodo (fast)
+    4. Fall back to atlite ERA5 download (slow)
 
     Note: Snakemake handles checking if output_path already exists,
     so we don't need to duplicate that logic here.
@@ -246,11 +275,16 @@ def acquire_cutout(year, output_path, data_dir=None, enable_zenodo=True,
         Whether to verify MD5 checksums on Zenodo downloads.
     zenodo_files : dict or None
         Pre-fetched Zenodo file metadata.
+    enable_earthmover : bool
+        Whether to try the Earthmover ERA5 tier before Zenodo (needs the optional
+        arraylake deps and a free Arraylake account; skipped if unavailable).
+    earthmover_bounds : dict or None
+        {"north", "south", "west", "east"} GB box for the Earthmover build.
 
     Returns
     -------
     str
-        The source of the cutout: "data_dir", "zenodo", or "atlite"
+        The source of the cutout: "data_dir", "earthmover", "zenodo", or "atlite"
     """
     output_path = Path(output_path)
     filename = f"uk-{year}.nc"
@@ -266,7 +300,15 @@ def acquire_cutout(year, output_path, data_dir=None, enable_zenodo=True,
             logger.info(f"  Copied to {output_path}")
             return "data_dir"
 
-    # --- Step 2: Try Zenodo download ---
+    # --- Step 2: Try Earthmover (fast: reads only the GB box, no full-file download) ---
+    if enable_earthmover and is_earthmover_available():
+        try:
+            download_with_earthmover(year, output_path, bounds=earthmover_bounds)
+            return "earthmover"
+        except Exception as e:
+            logger.warning(f"  Earthmover build failed ({e}), falling back to Zenodo/atlite...")
+
+    # --- Step 3: Try Zenodo download ---
     if enable_zenodo and is_available_on_zenodo(filename, zenodo_files):
         logger.info(f"[ZENODO] Cutout for {year} is available on Zenodo, downloading...")
         success = download_from_zenodo(

@@ -79,12 +79,28 @@ download:
 zenodo:
   # Enable/disable Zenodo downloads (set to false to always use atlite)
   enabled: true
-  
+
   # Verify MD5 checksum after download (recommended)
   verify_checksum: true
-  
+
   # Zenodo record ID (update if a new version is published)
   record_id: "18325225"
+
+# ────────────────────────────────────────────────────────────
+# EARTHMOVER ERA5 (opt-in, fastest tier — tried before Zenodo)
+# ────────────────────────────────────────────────────────────
+# Builds the cutout directly from the public Arraylake ERA5 dataset
+# (earthmover-public/era5): reads only the GB box for the year, so there is
+# no ~700 MB per-year download and any year 1940-present is available.
+#
+# Requires the optional dependencies and a (free) Arraylake account:
+#   pip install arraylake "zarr>=3" icechunk pcodec numcodecs
+#   arraylake auth login        # or set ARRAYLAKE_TOKEN
+#
+# Safe to leave enabled: if the deps/credentials are absent it is skipped
+# automatically and acquisition falls through to Zenodo, then CDS.
+earthmover:
+  enabled: false
 
 # ────────────────────────────────────────────────────────────
 # File Paths
