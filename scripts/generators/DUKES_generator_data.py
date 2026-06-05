@@ -457,7 +457,10 @@ def geocode_from_nominatim(df: pd.DataFrame, cache_file: str = "data/generators/
     # Load failure cache (stations that couldn't be geocoded)
     failed_stations = set()
     if Path(failure_cache_file).exists():
-        with open(failure_cache_file, 'r') as f:
+        # The failures cache ships cp1252-encoded (Windows origin; e.g. the apostrophe
+        # in "Fiddler's Ferry"), which raises UnicodeDecodeError under the default UTF-8
+        # reader on macOS/Linux. Read it as cp1252 and tolerate stray bytes.
+        with open(failure_cache_file, 'r', encoding='cp1252', errors='ignore') as f:
             failed_stations = set(line.strip() for line in f if line.strip())
         logger.info(f"Loaded {len(failed_stations)} previously failed stations from cache")
     
